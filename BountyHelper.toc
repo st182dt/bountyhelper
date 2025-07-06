@@ -1,0 +1,15 @@
+## Interface: 110107
+
+## Title: Bounty Helper
+## Author: Bettiold
+## Version: 1.0
+## Notes: Your ultimate companion for collecting mounts from raids and dungeons
+## IconTexture: 4644000
+## SavedVariables: BountyHelperDB, dbBH
+
+Libs\LibStub.lua
+Libs\CallbackHandler-1.0.lua
+Libs\LibDataBroker-1.1.lua
+Libs\LibDBIcon-1.0.lua
+
+main.lua
