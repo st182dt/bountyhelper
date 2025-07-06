@@ -28,7 +28,7 @@ local waypoints = {
     [1205] = {point = {543, 0.5146, 0.2710}},
     [1448] = {point = {534, 0.4689, 0.5213}},
     [1530] = {point = {680, 0.4349, 0.5707}},
-    [1651] = {point = {42, 0.4715, 0.7494}},
+    [1651] = {point = {42, 0.467, 0.701}},
     [1676] = {point = {646, 0.6397, 0.2138}},
     [1712] = {point = {885, 0.5486, 0.6256}},
     [1754] = {point = {895, 0.843, 0.7836}},
@@ -313,6 +313,7 @@ MyMountTracker.mountDataLoaded = false
 local hideOwned = false
 local hideKilled = false
 local hideButton = false
+local lockEsc = false
 local currentScale = 1.0
 local minimapButton = nil
 
@@ -395,9 +396,9 @@ local LDB = LibStub("LibDataBroker-1.1"):NewDataObject("BountyHelper",{
   end
 })
 
+local closeSettings
 function MyMountTracker:CreateUI()
     local f = CreateFrame("Frame", "MyMountTrackerFrame", UIParent, "BackdropTemplate")
-    table.insert(UISpecialFrames, "MyMountTrackerFrame")
     f:SetSize(650, 600)
     f:SetFrameStrata("HIGH")
     f:SetPoint("CENTER")
@@ -408,12 +409,14 @@ function MyMountTracker:CreateUI()
     f:SetScript("OnMouseDown", f.StartMoving)
     f:SetScript("OnMouseUp", f.StopMovingOrSizing)
     f:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
-    f:SetBackdropColor(0.03, 0.03, 0.03, 0.825)
+    f:SetBackdropColor(0.03137, 0.03137, 0.03137, 0.825)
+    f:SetClipsChildren(true)
     f:Hide()
     MyMountTracker.Frames.Main = f
 
     local title = f:CreateFontString(nil, "ARTWORK", "GameFontNormalHuge")
-    title:SetPoint("TOPLEFT", 12, -12)
+    title:SetHeight(40)
+    title:SetPoint("TOPLEFT", 12, 0)
     title:SetText(COLORS.GOLD .. "Bounty Helper")
 
     local closeButton = CreateFrame("Button", nil, f, "UIPanelCloseButton")
@@ -421,9 +424,10 @@ function MyMountTracker:CreateUI()
     closeButton:SetScript("OnClick", function(self)
         MyMountTracker.Frames.Main:Hide()
     end)
+    closeButton:Hide()
 
     local toMountViewButton = CreateFrame("Button", "MyMountTrackerToMountViewButton", f, "UIPanelButtonTemplate")
-    toMountViewButton:SetPoint("TOPRIGHT", -45, -6)
+    toMountViewButton:SetPoint("TOPRIGHT", -60, -6)
     toMountViewButton:SetText("Sort by Mount")
     toMountViewButton:SetSize(120, 22)
     toMountViewButton:SetScale(1.2)
@@ -431,7 +435,7 @@ function MyMountTracker:CreateUI()
     MyMountTracker.Frames.ToMountViewButton = toMountViewButton
 
     local toDifficultyViewButton = CreateFrame("Button", "MyMountTrackerToDifficultyViewButton", f, "UIPanelButtonTemplate")
-    toDifficultyViewButton:SetPoint("TOPRIGHT", -45, -6)
+    toDifficultyViewButton:SetPoint("TOPRIGHT", -60, -6)
     toDifficultyViewButton:SetText("Sort by Difficulty")
     toDifficultyViewButton:SetSize(120, 22)
     toDifficultyViewButton:SetScale(1.2)
@@ -439,8 +443,8 @@ function MyMountTracker:CreateUI()
     MyMountTracker.Frames.ToDifficultyViewButton = toDifficultyViewButton
 
     local diffScrollFrame = CreateFrame("ScrollFrame", "MyMountTrackerScrollFrame", f, "UIPanelScrollFrameTemplate")
-    diffScrollFrame:SetPoint("TOPLEFT", 12, -40)
-    diffScrollFrame:SetPoint("BOTTOMRIGHT", -32, 42)
+    diffScrollFrame:SetPoint("TOPLEFT", 12, -48)
+    diffScrollFrame:SetPoint("BOTTOMRIGHT", -32, 12)
     MyMountTracker.Frames.ScrollFrame = diffScrollFrame
 
     local diffScrollChild = CreateFrame("Frame", "MyMountTrackerScrollChild")
@@ -448,9 +452,13 @@ function MyMountTracker:CreateUI()
     diffScrollFrame:SetScrollChild(diffScrollChild)
     MyMountTracker.Frames.ScrollChild = diffScrollChild
 
-    local mountScrollFrame = CreateFrame("ScrollFrame", "MyMountTrackerMountViewScrollFrame", f, "UIPanelScrollFrameTemplate")
-    mountScrollFrame:SetPoint("TOPLEFT", 12, -40)
-    mountScrollFrame:SetPoint("BOTTOMRIGHT", -32, 42)
+    local mountScrollFrame = CreateFrame("ScrollFrame", "MyMountTrackerMountViewScrollFrame", f, "ScrollFrameTemplate")
+    mountScrollFrame:SetPoint("TOPLEFT", 12, -42)
+    mountScrollFrame:SetPoint("BOTTOMRIGHT", -32, 12)
+    --mountScrollFrame.ScrollBar:Hide()
+    mountScrollFrame.ScrollBar:ClearAllPoints()
+    mountScrollFrame.ScrollBar:SetHeight(542)
+    mountScrollFrame.ScrollBar:SetPoint("TOPRIGHT", 20, -8)
     MyMountTracker.Frames.MountViewScrollFrame = mountScrollFrame
 
     local mountScrollChild = CreateFrame("Frame", "MyMountTrackerMountViewScrollChild")
@@ -458,22 +466,85 @@ function MyMountTracker:CreateUI()
     mountScrollFrame:SetScrollChild(mountScrollChild)
     MyMountTracker.Frames.MountViewScrollChild = mountScrollChild
     
+    local close = CreateFrame("Button", nil, f)
+    close:SetSize(32, 32)
+    close:SetPoint("TOPRIGHT", -4, -4)
+    close.texture = close:CreateTexture(nil, "OVERLAY")
+    close.texture:SetTexture("Interface\\AddOns\\BountyHelper\\Assets\\close")
+    close.texture:SetVertexColor(1, 0.2509803921568627, 0.2509803921568627)
+    close.texture:SetAllPoints()
+    close:SetScript("OnEnter", function() close.texture:SetVertexColor(1, 1, 1) end)
+    close:SetScript("OnLeave", function() close.texture:SetVertexColor(1, 0.2509803921568627, 0.2509803921568627) end)
+    close:SetScript("OnClick", function() f:Hide() end)
+
+    local settingsPanel = CreateFrame("Frame", nil, f, "BackdropTemplate")
+    settingsPanel:SetSize(650, 102+32)
+    settingsPanel:SetPoint("BOTTOM")
+    settingsPanel:EnableMouse(true)
+    settingsPanel:SetClipsChildren(true)
+    settingsPanel:SetFrameLevel(mountScrollChild:GetFrameLevel() + 10)
+    settingsPanel:Hide()
+    settingsPanel:SetScript("OnEnter", function()
+        if closeSettings then
+            closeSettings:Cancel(); closeSettings = nil
+        end
+    end)
+    settingsPanel:SetScript("OnLeave", function()
+        --print("leaving")
+        closeSettings = C_Timer.NewTimer(2, function()
+            settingsPanel:Hide(); closeSettings = nil
+        end)
+    end)
+
+    local settingsBg = CreateFrame("Frame", nil, settingsPanel, "BackdropTemplate")
+    settingsBg:SetSize(650, 68+32)
+    settingsBg:SetPoint("BOTTOM")
+    settingsBg:SetBackdrop({bgFile = "Interface\\Buttons\\WHITE8x8"})
+    settingsBg:SetBackdropColor(0.03137, 0.03137, 0.03137, 1)
+
+    local settingsSeparator = settingsPanel:CreateTexture(nil, "ARTWORK")
+    settingsSeparator:SetTexture("Interface\\Buttons\\WHITE8x8")
+    settingsSeparator:SetColorTexture(1, 0.7529411764705882, 0, 1)
+    settingsSeparator:SetSize(f:GetWidth(), 2)
+    settingsSeparator:SetPoint("TOPLEFT", 0, -32)
+
+    local settingsGlow = CreateFrame("Frame", nil, settingsPanel, "BackdropTemplate")
+    settingsGlow:SetSize(650, 32)
+    settingsGlow:SetPoint("BOTTOM", settingsSeparator, "TOP")
+    settingsGlow:SetBackdrop({bgFile = "Interface\\AddOns\\BountyHelper\\Assets\\glow"})
+
+    local settings = CreateFrame("Button", nil, f)
+    settings:SetSize(32, 32)
+    settings:SetPoint("TOPRIGHT", -4-32, -4)
+    settings.texture = settings:CreateTexture(nil, "OVERLAY")
+    settings.texture:SetTexture("Interface\\AddOns\\BountyHelper\\Assets\\settings")
+    settings.texture:SetVertexColor(1, 0.7529411764705882, 0)
+    settings.texture:SetAllPoints()
+    settings:SetScript("OnEnter", function() settings.texture:SetVertexColor(1, 1, 1) end)
+    settings:SetScript("OnLeave", function() settings.texture:SetVertexColor(1, 0.7529411764705882, 0) end)
+    settings:SetScript("OnClick", function()
+        if closeSettings then
+            closeSettings:Cancel(); closeSettings = nil
+        end
+        settingsPanel:SetShown(not settingsPanel:IsShown())
+    end)
+
     local separator = f:CreateTexture(nil, "ARTWORK")
     separator:SetTexture("Interface\\Buttons\\WHITE8x8")
     separator:SetColorTexture(1, 0.7529411764705882, 0, 1)
-    separator:SetHeight(2)
-    separator:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 10, 32)
-    separator:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -10, 32)
+    separator:SetSize(f:GetWidth(), 2)
+    separator:SetPoint("TOPLEFT", 0, -40)
     
-    local scaleSlider = CreateFrame("Slider", "MyMountTrackerScaleSlider", f, "UISliderTemplate")
-    scaleSlider:SetPoint("BOTTOMLEFT", 8, 5)
+    local scaleSlider = CreateFrame("Slider", "MyMountTrackerScaleSlider", settingsBg, "UISliderTemplate")
+    scaleSlider:SetPropagateMouseMotion(true)
+    scaleSlider:SetPoint("TOPLEFT", 10, -12-8-2)
     scaleSlider:SetWidth(150)
     scaleSlider:SetHeight(22)
     scaleSlider:SetMinMaxValues(0.5, 1.5)
     scaleSlider:SetValueStep(0.05)
     MyMountTracker.Frames.ScaleSlider = scaleSlider
 
-    local scaleValueText = f:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    local scaleValueText = settingsBg:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     scaleValueText:SetFont(STANDARD_TEXT_FONT, 14)
     scaleValueText:SetPoint("LEFT", scaleSlider, "RIGHT", 8, 0)
     MyMountTracker.Frames.ScaleValueText = scaleValueText
@@ -490,8 +561,9 @@ function MyMountTracker:CreateUI()
         currentScale = roundedValue
     end)
 
-    local hideButtonCheckbox = CreateFrame("CheckButton", "MyMountTrackerHideButtonCheckbox", f, "UICheckButtonTemplate")
+    local hideButtonCheckbox = CreateFrame("CheckButton", "MyMountTrackerHideButtonCheckbox", settingsBg, "UICheckButtonTemplate")
     hideButtonCheckbox:SetPoint("LEFT", scaleSlider, "RIGHT", 117, 0)
+    hideButtonCheckbox:SetPropagateMouseMotion(true)
     hideButtonCheckbox.text = hideButtonCheckbox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     hideButtonCheckbox.text:SetFont(STANDARD_TEXT_FONT, 14)
     hideButtonCheckbox.text:SetPoint("LEFT", hideButtonCheckbox, "RIGHT", 0, 1)
@@ -500,11 +572,11 @@ function MyMountTracker:CreateUI()
         hideButton = self:GetChecked()
         buttonBH:SetShown(not hideButton)
         dbBH.minimap.hide = hideButton
-        MyMountTracker:UpdateVisibleFrame()
     end)
     MyMountTracker.Frames.HideButtonCheckbox = hideButtonCheckbox
     
-    local hideOwnedCheckbox = CreateFrame("CheckButton", "MyMountTrackerHideOwnedCheckbox", f, "UICheckButtonTemplate")
+    local hideOwnedCheckbox = CreateFrame("CheckButton", "MyMountTrackerHideOwnedCheckbox", settingsBg, "UICheckButtonTemplate")
+    hideOwnedCheckbox:SetPropagateMouseMotion(true)
     hideOwnedCheckbox:SetPoint("LEFT", scaleSlider, "RIGHT", 238, 0)
     hideOwnedCheckbox.text = hideOwnedCheckbox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     hideOwnedCheckbox.text:SetFont(STANDARD_TEXT_FONT, 14)
@@ -516,8 +588,9 @@ function MyMountTracker:CreateUI()
     end)
     MyMountTracker.Frames.HideOwnedCheckbox = hideOwnedCheckbox
 
-    local hideKilledCheckbox = CreateFrame("CheckButton", "MyMountTrackerHideKilledCheckbox", f, "UICheckButtonTemplate")
+    local hideKilledCheckbox = CreateFrame("CheckButton", "MyMountTrackerHideKilledCheckbox", settingsBg, "UICheckButtonTemplate")
     hideKilledCheckbox:SetPoint("LEFT", scaleSlider, "RIGHT", 365, 0)
+    hideKilledCheckbox:SetPropagateMouseMotion(true)
     hideKilledCheckbox.text = hideKilledCheckbox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     hideKilledCheckbox.text:SetFont(STANDARD_TEXT_FONT, 14)
     hideKilledCheckbox.text:SetPoint("LEFT", hideKilledCheckbox, "RIGHT", 0, 1)
@@ -527,6 +600,28 @@ function MyMountTracker:CreateUI()
         MyMountTracker:UpdateVisibleFrame()
     end)
     MyMountTracker.Frames.HideKilledCheckbox = hideKilledCheckbox
+
+    local lockCheckbox = CreateFrame("CheckButton", "MyMountTrackerHideKilledCheckbox", settingsBg, "UICheckButtonTemplate")
+    lockCheckbox:SetPoint("TOPLEFT", settingsBg, 7, -44-8-2)
+    lockCheckbox:SetPropagateMouseMotion(true)
+    lockCheckbox.text = lockCheckbox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    lockCheckbox.text:SetFont(STANDARD_TEXT_FONT, 14)
+    lockCheckbox.text:SetPoint("LEFT", lockCheckbox, "RIGHT", 0, 1)
+    lockCheckbox.text:SetText("Disable Esc to Close")
+    lockCheckbox:SetScript("OnClick", function(self)
+        lockEsc = self:GetChecked()
+        if lockEsc then
+            for i, frameName in ipairs(UISpecialFrames) do
+                if frameName == "MyMountTrackerFrame" then
+                    table.remove(UISpecialFrames, i)
+                    break
+                end
+            end
+        else
+            table.insert(UISpecialFrames, "MyMountTrackerFrame")
+        end
+    end)
+    MyMountTracker.Frames.LockCheckbox = lockCheckbox
 end
 
 function MyMountTracker:CreateCategoryHeader(parent, difficultyID)
@@ -910,17 +1005,17 @@ function MyMountTracker:CreateMountHeaderRow(parent, mountID, journalMountID, mo
     border:SetFrameLevel(row:GetFrameLevel() - 1)
     border:SetPoint("TOPLEFT", row, "TOPLEFT", -2, 2)
     border:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 2, -2)
-    border:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
+    border:SetBackdrop({bgFile = "Interface\\Buttons\\WHITE8x8"})
     border:SetBackdropColor(1, 0.7529411764705882, 0, 1)
     border:Hide()
     row.border = border
 
     local bg = CreateFrame("Frame", nil, row, "BackdropTemplate")
     bg:SetPoint("LEFT", row, 2, 0)
-    bg:SetSize(parent:GetWidth() - 6, 36)
+    bg:SetSize(parent:GetWidth() - 4, 36)
     bg:SetFrameLevel(row:GetFrameLevel())
     bg:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
-    bg:SetBackdropColor(0.03, 0.03, 0.03, 1)
+    bg:SetBackdropColor(0.03137, 0.03137, 0.03137, 1)
 
     local icon = CreateFrame("Button", nil, row)
     icon:SetSize(32, 32)
@@ -948,7 +1043,7 @@ end
 
 function MyMountTracker:CreateMountSourceRow(parent, sourceData)
     local row = CreateFrame("Frame", nil, parent)
-    row:SetSize(parent:GetWidth() - 20, 30)
+    row:SetSize(parent:GetWidth(), 30)
     row.sourceData = sourceData
     local data = sourceData.originalData
     local mapName = instanceToMap[sourceData.instanceID].mapName or "Unknown Map"
@@ -958,10 +1053,8 @@ function MyMountTracker:CreateMountSourceRow(parent, sourceData)
     nameText:SetFont(STANDARD_TEXT_FONT, 16, "OUTLINE")
     nameText:SetText(COLORS.WHITE .. data.bossName)
     nameText:SetJustifyH("LEFT")
-    if nameText:GetWidth() > 180 then
-        nameText:SetWidth(180)
-    end
     nameText:SetWordWrap(false)
+    nameText:SetSize(math.min(nameText:GetWidth(), 180), 30)
     nameText:EnableMouse(true)
     nameText:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
@@ -975,10 +1068,8 @@ function MyMountTracker:CreateMountSourceRow(parent, sourceData)
     mapNameText:SetFont(STANDARD_TEXT_FONT, 14)
     mapNameText:SetText(COLORS.BLUE .. mapName)
     mapNameText:SetWordWrap(false)
-    if mapNameText:GetWidth() > 180 then
-        mapNameText:SetWidth(180)
-    end
     mapNameText:SetJustifyH("LEFT")
+    mapNameText:SetSize(math.min(mapNameText:GetWidth(), 180), 30)
     mapNameText:EnableMouse(true)
     mapNameText:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
@@ -1076,28 +1167,20 @@ function MyMountTracker:UpdateMountViewLayout()
             end
         end
     end
-
+    
+    scrollChild:SetHeight(yPadding)
     for _, frame in ipairs(MyMountTracker.MountViewContentFrames) do
         if frame:IsShown() then
             frame:ClearAllPoints()
             if not lastVisibleFrame then
-                frame:SetPoint("TOP", scrollChild, "TOP", 2, -2)
+                frame:SetPoint("TOP", scrollChild, "BOTTOM", 0, 0)
             else
-                local pad = frame.isMountHeader and -12 or -yPadding
-                frame:SetPoint("TOP", lastVisibleFrame, "BOTTOM", 2, pad)
+                frame:SetPoint("TOP", lastVisibleFrame, "BOTTOM", 0, -yPadding)
             end
 
-            if frame.isMountHeader then
-                frame:SetPoint("LEFT", scrollChild, "LEFT", 2, 0)
-            else
-                frame:SetPoint("LEFT", scrollChild, "LEFT", xIndent, 0)
-            end
-            
             lastVisibleFrame = frame
-            totalHeight = totalHeight + frame:GetHeight() + (frame.isMountHeader and 12 or yPadding)
         end
     end
-    scrollChild:SetHeight(math.max(1, totalHeight - yPadding + 10))
 end
 
 function MyMountTracker:Initialize()
@@ -1141,6 +1224,7 @@ function MyMountTracker:Toggle()
         MyMountTracker.Frames.HideOwnedCheckbox:SetChecked(hideOwned)
         MyMountTracker.Frames.HideKilledCheckbox:SetChecked(hideKilled)
         MyMountTracker.Frames.HideButtonCheckbox:SetChecked(hideButton)
+        MyMountTracker.Frames.LockCheckbox:SetChecked(lockEsc)
         MyMountTracker:ShowMountView()
     end
 end
@@ -1193,6 +1277,7 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
             hideOwned = BountyHelperDB.hideOwned or false
             hideKilled = BountyHelperDB.hideKilled or false
             hideButton = BountyHelperDB.hideButton or false
+            lockEsc = BountyHelperDB.lockEsc or false
             currentScale = BountyHelperDB.scale or 1.0
 
             local LibDBIcon = LibStub("LibDBIcon-1.0")
@@ -1210,21 +1295,24 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
             wp.name = C_Map.GetMapInfo(wp.point[1]).name
         end
 
-        local journalOverrides = {
-            [329] = 1292
-        }
+        local journalOverrides = {[329] = 1292}
+        local difficultyOverrides = {[556] = 2}
         for _, id in ipairs(instanceOrderList) do
             local journalID = journalOverrides[id] or C_EncounterJournal.GetInstanceForGameMap(id)
             local mapName = EJ_GetInstanceInfo(journalID)
             instanceToMap[id] = {
                 journalID = journalID,
-                mapName = mapName
+                mapName = mapName,
+                difficultyID = difficultyOverrides[id] or nil
             }
         end
 
         for difficultyID, instances in pairs(bossData) do
             for instanceID, bosses in pairs(instances) do
                 for i, boss in ipairs(bosses) do
+                    if instanceToMap[instanceID].difficultyID then
+                        EJ_SetDifficulty(instanceToMap[instanceID].difficultyID)
+                    end
                     EJ_SelectInstance(instanceToMap[instanceID].journalID)
                     boss.bossName, _, _, _, _, _, boss.encounterID = EJ_GetEncounterInfoByIndex(boss.encounterID)
                 end
@@ -1235,7 +1323,8 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
         MyMountTracker.Frames.Main:SetScale(currentScale)
         MyMountTracker.Frames.ScaleSlider:SetValue(currentScale)
         MyMountTracker.Frames.ScaleValueText:SetText(string.format("UI Scale: %.2f", currentScale))
-        
+        if not lockEsc then table.insert(UISpecialFrames, "MyMountTrackerFrame") end
+
         checkSaved()
         self:UnregisterEvent("FIRST_FRAME_RENDERED")
         self:UnregisterEvent("ADDON_LOADED")
@@ -1244,6 +1333,7 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
         BountyHelperDB.hideOwned = hideOwned
         BountyHelperDB.hideKilled = hideKilled
         BountyHelperDB.hideButton = hideButton
+        BountyHelperDB.lockEsc = lockEsc
         BountyHelperDB.scale = currentScale
 
     elseif event == "ENCOUNTER_END" then
