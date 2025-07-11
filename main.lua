@@ -94,7 +94,7 @@ dbBH = {minimap = {hide = false}}
 local buttonBH
 local LDB = LibStub("LibDataBroker-1.1"):NewDataObject("BountyHelper",{
   icon = "Interface\\AddOns\\BountyHelper\\Assets\\icon",
-  OnClick = function(self,button) if button == "LeftButton" then SlashCmdList["CBH"]() end end,
+  OnClick = function(self,button) if button == "LeftButton" then bountyHelper:Toggle() end end,
   OnTooltipShow = function(tooltip)
     tooltip:AddLine("|cffffffffBounty Helper")
     tooltip:AddLine(colors.green .. "<Left Click to toggle>")
@@ -151,13 +151,20 @@ local settingsTimer
 function bountyHelper:createUI()
     local settingsPanel
 
-    local f = createRect(UIParent, {650, 600}, {"CENTER"}, colors.blackRGBA, nil, "bountyHelperFrame")
+    local f = createRect(UIParent, {650, 600}, BountyHelperDB.point, colors.blackRGBA, nil, "bountyHelperFrame")
     f:SetFrameStrata("HIGH")
     f:SetClipsChildren(true)
     f:SetMovable(true)
+    f:SetPropagateKeyboardInput(true)
     f:Hide()
     f:SetScript("OnMouseDown", f.StartMoving)
     f:SetScript("OnMouseUp", f.StopMovingOrSizing)
+    f:SetScript("OnKeyDown", function(_, key)
+        if key == GetBindingKey("TOGGLEGAMEMENU") and not lockEsc then
+            f:Hide()
+            GameMenuFrame:Show()
+        end
+    end)
     self.frames.main = f
 
     --TODO
@@ -314,16 +321,6 @@ function bountyHelper:createUI()
     lockCheckbox.text:SetText("Disable Esc to Close")
     lockCheckbox:SetScript("OnClick", function(self)
         lockEsc = self:GetChecked()
-        if lockEsc then
-            for i, frameName in ipairs(UISpecialFrames) do
-                if frameName == "bountyHelperFrame" then
-                    table.remove(UISpecialFrames, i)
-                    break
-                end
-            end
-        else
-            table.insert(UISpecialFrames, "bountyHelperFrame")
-        end
     end)
     self.frames.LockCheckbox = lockCheckbox
 end
@@ -633,14 +630,13 @@ function bountyHelper:createContent()
             if IsControlKeyDown() then
                 if not InCombatLockdown() then DressUpMount(data.journalMountID) end
             elseif db.waypoints[instanceID] then
-                local waypoint = UiMapPoint.CreateFromCoordinates(unpack(db.waypoints[instanceID].point))
-                C_Map.SetUserWaypoint(waypoint)
-                C_SuperTrack.SetSuperTrackedUserWaypoint(true)
                 if not InCombatLockdown() then
+                    local waypoint = UiMapPoint.CreateFromCoordinates(unpack(db.waypoints[instanceID].point))
+                    C_Map.SetUserWaypoint(waypoint)
+                    C_SuperTrack.SetSuperTrackedUserWaypoint(true)
                     OpenWorldMap(db.waypoints[instanceID].point[4] or db.waypoints[instanceID].point[1])
+                    print(string.format("%sBounty Helper:|r Waypoint set for %s", colors.gold, mountLink))
                 end
-
-                print(string.format("%sBounty Helper:|r Waypoint set for %s", colors.gold, mountLink))
             else
                 print(string.format("%sBounty Helper:|r No waypoint data available for %s", colors.gold, mountLink))
             end
@@ -732,14 +728,17 @@ function bountyHelper:createSourceRow(source)
         if type(source.lfr[1]) == "table" then
             source.lfr = source.lfr[faction]
         end
+        if type(source.wing) == "table" then
+            source.wing = source.wing[faction]
+        end
         createButton(row, {"LEFT", diffText, "RIGHT"}, "pin", colors.goldRGB, function()
-            C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(unpack(source.lfr)))
-            C_SuperTrack.SetSuperTrackedUserWaypoint(true)
             if not InCombatLockdown() then
+                C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(unpack(source.lfr)))
+                C_SuperTrack.SetSuperTrackedUserWaypoint(true)
                 OpenWorldMap(source.lfr[4] or source.lfr[1])
+                print(string.format("%sBounty Helper:|r Waypoint set", colors.gold))
             end
-            print(string.format("%sBounty Helper:|r Waypoint set", colors.gold))
-        end, nil, colors.green .. "<Left Click to add Map Pin>")
+        end, nil, colors.green .. "<Left Click to add Map Pin>|r\nWing: " .. GetLFGDungeonInfo(source.wing))
     end
     
     return row
@@ -779,7 +778,11 @@ function bountyHelper:sortContent(sorting)
         if sorting == "default" then
             return orderMap[a[1].mountID] < orderMap[b[1].mountID]
         elseif sorting == "chance" then
-            return a[2].source.chance < b[2].source.chance
+            local chanceA = a[2].source.chance
+            local chanceB = b[2].source.chance
+
+            if chanceA == chanceB then return orderMap[a[1].mountID] < orderMap[b[1].mountID]
+            else return chanceA < chanceB end
         end
     end)
 
@@ -887,12 +890,6 @@ function bountyHelper:UpdateVisibleFrame()
     end
 end
 
-SLASH_CBH1 = "/bh"
-SLASH_CBH2 = "/cbh"
-SLASH_CBH3 = "/bounty"
-SLASH_CBH4 = "/bountyhelper"
-SlashCmdList["CBH"] = function() bountyHelper:Toggle() end
-
 function checkSaved()
     for i = 1, GetNumSavedInstances() do
         local _, _, reset, difficultyID, _, _, _, _, _, _, numEncounters, _, _, instanceID = GetSavedInstanceInfo(i)
@@ -935,6 +932,8 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
             hideButton = BountyHelperDB.hideButton or false
             lockEsc = BountyHelperDB.lockEsc or false
             currentScale = BountyHelperDB.scale or 1.0
+            --if not BountyHelperDB.position then = BountyHelperDB.position = {0, 0} end
+            BountyHelperDB.point = BountyHelperDB.point or {"CENTER", 0, 0}
 
             local LibDBIcon = LibStub("LibDBIcon-1.0")
             LibDBIcon:Register("BountyHelper", LDB, dbBH.minimap)
@@ -964,13 +963,9 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
         end
 
         for instanceID, bosses in pairs(db.bossData) do
-            if instanceToMap[instanceID].difficultyID then
-                EJ_SetDifficulty(instanceToMap[instanceID].difficultyID)
-            end
-            EJ_SelectInstance(instanceToMap[instanceID].journalID)
             for _, boss in ipairs(bosses) do
                 local ejIndex = boss.encounterID
-                boss.name, _, _, _, _, _, boss.encounterID = EJ_GetEncounterInfoByIndex(ejIndex)
+                boss.name, _, _, _, _, _, boss.encounterID = EJ_GetEncounterInfo(ejIndex)
             end
         end
 
@@ -978,9 +973,14 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
         bountyHelper.frames.main:SetScale(currentScale)
         bountyHelper.frames.ScaleSlider:SetValue(currentScale)
         bountyHelper.frames.ScaleValueText:SetText(string.format("UI Scale: %.2f", currentScale))
-        if not lockEsc then table.insert(UISpecialFrames, "bountyHelperFrame") end
 
         checkSaved()
+
+        SLASH_CBH1 = "/bh"
+        SLASH_CBH2 = "/cbh"
+        SLASH_CBH3 = "/bounty"
+        SLASH_CBH4 = "/bountyhelper"
+        SlashCmdList["CBH"] = function() bountyHelper:Toggle() end
         self:UnregisterEvent("FIRST_FRAME_RENDERED")
         self:UnregisterEvent("ADDON_LOADED")
 
@@ -990,6 +990,8 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
         BountyHelperDB.hideButton = hideButton
         BountyHelperDB.lockEsc = lockEsc
         BountyHelperDB.scale = currentScale
+        local point, relativeTo, relativePoint, xOfs, yOfs = bountyHelper.frames.main:GetPoint()
+        BountyHelperDB.point = { relativePoint, xOfs, yOfs }
 
     elseif event == "ENCOUNTER_END" then
         local encounterID, _, difficultyID, _, success = ...

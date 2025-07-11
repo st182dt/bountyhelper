@@ -1,4 +1,4 @@
-local _,db = ...
+_,db = ...
 db.instanceOrderList = {
     249, 329, 532, 550, 556, 575, 585, 603, 616, 624, 631, 657, 720, 725,
     754, 859, 967, 1008, 1098, 1136, 1205, 1448, 1530, 1651, 1676, 1712,
@@ -44,119 +44,119 @@ db.waypoints = {
 
 db.bossData = {
     [249] = { -- Onyxia's Lair
-        { name = "Onyxia", encounterID = 1, killedAtDiff = { [3] = false, [4] = false } },
+        { name = "Onyxia", encounterID = 1651, killedAtDiff = { [3] = false, [4] = false } },
     },
     [329] = { -- Stratholme
-        { name = "Lord Aurius Rivendare", encounterID = 6, killedAtDiff = { [1] = false } },
+        { name = "Lord Aurius Rivendare", encounterID = 456, killedAtDiff = { [1] = false } },
     },
     [532] = { -- Karazhan
-        { name = "Attumen the Huntsman", encounterID = 2, killedAtDiff = { [3] = false } },
+        { name = "Attumen the Huntsman", encounterID = 1553, killedAtDiff = { [3] = false } },
     },
     [550] = { -- The Eye
-        { name = "Kael'thas Sunstrider", encounterID = 4, killedAtDiff = { [4] = false } },
+        { name = "Kael'thas Sunstrider", encounterID = 1576, killedAtDiff = { [4] = false } },
     },
     [556] = { -- Sethekk Halls
-        { name = "Anzu", encounterID = 2, killedAtDiff = { [2] = false } },
+        { name = "Anzu", encounterID = 542, killedAtDiff = { [2] = false } },
     },
     [575] = { -- Utgarde Pinnacle
-        { name = "Skadi the Ruthless", encounterID = 3, killedAtDiff = { [2] = false } },
+        { name = "Skadi the Ruthless", encounterID = 643, killedAtDiff = { [2] = false } },
     },
     [585] = { -- Magisters' Terrace
-        { name = "Kael'thas Sunstrider", encounterID = 4, killedAtDiff = { [2] = false } },
+        { name = "Kael'thas Sunstrider", encounterID = 533, killedAtDiff = { [2] = false } },
     },
     [603] = { -- Ulduar
-        { name = "Yogg-Saron", encounterID = 13, killedAtDiff = { [14] = false } },
+        { name = "Yogg-Saron", encounterID = 1649, killedAtDiff = { [14] = false } },
     },
     [616] = { -- The Eye of Eternity
-        { name = "Malygos", encounterID = 1, killedAtDiff = { [3] = false, [4] = false } },
+        { name = "Malygos", encounterID = 1617, killedAtDiff = { [3] = false, [4] = false } },
     },
     [624] = { -- Vault of Archavon
-        { name = "Archavon the Stone Watcher", encounterID = 1, killedAtDiff = { [3] = false, [4] = false } },
-        { name = "Emalon the Storm Watcher", encounterID = 2, killedAtDiff = { [3] = false, [4] = false } },
-        { name = "Koralon the Flame Watcher", encounterID = 3, killedAtDiff = { [3] = false, [4] = false } },
-        { name = "Toravon the Ice Watcher", encounterID = 4, killedAtDiff = { [3] = false, [4] = false } },
+        { name = "Archavon the Stone Watcher", encounterID = 1597, killedAtDiff = { [3] = false, [4] = false } },
+        { name = "Emalon the Storm Watcher", encounterID = 1598, killedAtDiff = { [3] = false, [4] = false } },
+        { name = "Koralon the Flame Watcher", encounterID = 1599, killedAtDiff = { [3] = false, [4] = false } },
+        { name = "Toravon the Ice Watcher", encounterID = 1600, killedAtDiff = { [3] = false, [4] = false } },
     },
     [631] = { -- Icecrown Citadel
-        { name = "The Lich King", encounterID = 12, killedAtDiff = { [6] = false } },
+        { name = "The Lich King", encounterID = 1636, killedAtDiff = { [6] = false } },
     },
     [657] = { -- The Vortex Pinnacle
-        { name = "Altairus", encounterID = 2, killedAtDiff = { [1] = false, [2] = false } },
+        { name = "Altairus", encounterID = 115, killedAtDiff = { [1] = false, [2] = false } },
     },
     [720] = { -- Firelands
-        { name = "Alysrazor", encounterID = 3, killedAtDiff = { [14] = false, [15] = false } },
-        { name = "Ragnaros", encounterID = 7, killedAtDiff = { [14] = false, [15] = false } },
+        { name = "Alysrazor", encounterID = 194, killedAtDiff = { [14] = false, [15] = false } },
+        { name = "Ragnaros", encounterID = 198, killedAtDiff = { [14] = false, [15] = false } },
     },
     [725] = { -- The Stonecore
-        { name = "Slabhide", encounterID = 2, killedAtDiff = { [1] = false, [2] = false } },
+        { name = "Slabhide", encounterID = 111, killedAtDiff = { [1] = false, [2] = false } },
     },
     [754] = { -- Throne of the Four Winds
-        { name = "Al'Akir", encounterID = 2, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
+        { name = "Al'Akir", encounterID = 155, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
     },
     [859] = { -- Zul'Gurub
-        { name = "Bloodlord Mandokir", encounterID = 2, killedAtDiff = { [2] = false } },
-        { name = "High Priestess Kilnara", encounterID = 7, killedAtDiff = { [2] = false } },
+        { name = "Bloodlord Mandokir", encounterID = 176, killedAtDiff = { [2] = false } },
+        { name = "High Priestess Kilnara", encounterID = 181, killedAtDiff = { [2] = false } },
     },
     [967] = { -- Dragon Soul
-        { name = "Ultraxion", encounterID = 5, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
-        { name = "Madness of Deathwing", encounterID = 8, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
+        { name = "Ultraxion", encounterID = 331, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
+        { name = "Madness of Deathwing", encounterID = 333, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
     },
     [1008] = { -- Mogu'shan Vaults
-        { name = "Elegon", encounterID = 5, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
+        { name = "Elegon", encounterID = 726, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
     },
     [1098] = { -- Throne of Thunder
-        { name = "Horridon", encounterID = 2, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
-        { name = "Ji-Kun", encounterID = 6, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
+        { name = "Horridon", encounterID = 819, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
+        { name = "Ji-Kun", encounterID = 828, killedAtDiff = { [3] = false, [4] = false, [5] = false, [6] = false } },
     },
     [1136] = { -- Siege of Orgrimmar
-        { name = "Garrosh Hellscream", encounterID = 14, killedAtDiff = { [16] = false } },
+        { name = "Garrosh Hellscream", encounterID = 869, killedAtDiff = { [16] = false } },
     },
     [1205] = { -- Blackrock Foundry
-        { name = "Blackhand", encounterID = 10, killedAtDiff = { [16] = false } },
+        { name = "Blackhand", encounterID = 959, killedAtDiff = { [16] = false } },
     },
     [1448] = { -- Hellfire Citadel
-        { name = "Archimonde", encounterID = 13, killedAtDiff = { [16] = false } },
+        { name = "Archimonde", encounterID = 1438, killedAtDiff = { [16] = false } },
     },
     [1530] = { -- The Nighthold
-        { name = "Gul'dan", encounterID = 10, killedAtDiff = { [14] = false, [15] = false, [16] = false } },
+        { name = "Gul'dan", encounterID = 1737, killedAtDiff = { [14] = false, [15] = false, [16] = false } },
     },
     [1651] = { -- Return to Karazhan
-        { name = "Attumen the Huntsman", encounterID = 5, killedAtDiff = { [23] = false } },
+        { name = "Attumen the Huntsman", encounterID = 1835, killedAtDiff = { [23] = false } },
     },
     [1676] = { -- Tomb of Sargeras
-        { name = "Mistress Sassz'ine", encounterID = 5, killedAtDiff = { [14] = false, [15] = false, [16] = false, [17] = false } },
+        { name = "Mistress Sassz'ine", encounterID = 1861, killedAtDiff = { [14] = false, [15] = false, [16] = false, [17] = false } },
     },
     [1712] = { -- Antorus, the Burning Throne
-        { name = "Felhounds of Sargeras", encounterID = 2, killedAtDiff = { [14] = false, [15] = false, [16] = false, [17] = false } },
-        { name = "Argus the Unmaker", encounterID = 11, killedAtDiff = { [16] = false } },
+        { name = "Felhounds of Sargeras", encounterID = 1987, killedAtDiff = { [14] = false, [15] = false, [16] = false, [17] = false } },
+        { name = "Argus the Unmaker", encounterID = 2031, killedAtDiff = { [16] = false } },
     },
     [1754] = { -- Freehold
-        { name = "Lord Harlan Sweete", encounterID = 4, killedAtDiff = { [23] = false } },
+        { name = "Lord Harlan Sweete", encounterID = 2095, killedAtDiff = { [23] = false } },
     },
     [1762] = { -- Kings' Rest
-        { name = "King Dazar", encounterID = 4, killedAtDiff = { [23] = false } },
+        { name = "King Dazar", encounterID = 2172, killedAtDiff = { [23] = false } },
     },
     [1841] = { -- The Underrot
-        { name = "Unbound Abomination", encounterID = 4, killedAtDiff = { [23] = false } },
+        { name = "Unbound Abomination", encounterID = 2158, killedAtDiff = { [23] = false } },
     },
     [2070] = { -- Battle of Dazar'alor
-        { name = "Mekkatorque", encounterID = 7, killedAtDiff = { [14] = false, [15] = false, [16] = false } },
-        { name = "Lady Jaina Proudmoore", encounterID = 9, killedAtDiff = { [17] = false } },
+        { name = "Mekkatorque", encounterID = 2334, killedAtDiff = { [14] = false, [15] = false, [16] = false } },
+        { name = "Lady Jaina Proudmoore", encounterID = 2343, killedAtDiff = { [16] = false, [17] = false } },
     },
     [2217] = { -- Ny'alotha, the Waking City
-        { name = "N'Zoth the Corruptor", encounterID = 12, killedAtDiff = { [16] = false } },
+        { name = "N'Zoth the Corruptor", encounterID = 2375, killedAtDiff = { [16] = false } },
     },
     [2286] = { -- The Necrotic Wake
-        { name = "Nalthor the Rimebinder", encounterID = 4, killedAtDiff = { [23] = false } },
+        { name = "Nalthor the Rimebinder", encounterID = 2396, killedAtDiff = { [23] = false } },
     },
     [2441] = { -- Tazavesh, the Veiled Market
-        { name = "So'leah", encounterID = 8, killedAtDiff = { [2] = false, [23] = false } },
+        { name = "So'leah", encounterID = 2455, killedAtDiff = { [2] = false, [23] = false } },
     },
     [2450] = { -- Sanctum of Domination
-        { name = "The Nine", encounterID = 3, killedAtDiff = { [14] = false, [15] = false, [16] = false, [17] = false } },
-        { name = "Sylvanas Windrunner", encounterID = 10, killedAtDiff = { [16] = false } },
+        { name = "The Nine", encounterID = 2439, killedAtDiff = { [14] = false, [15] = false, [16] = false, [17] = false } },
+        { name = "Sylvanas Windrunner", encounterID = 2441, killedAtDiff = { [16] = false } },
     },
     [2481] = { -- Sepulcher of the First Ones
-        { name = "The Jailer", encounterID = 11, killedAtDiff = { [16] = false } },
+        { name = "The Jailer", encounterID = 2464, killedAtDiff = { [16] = false } },
     },
 }
 
@@ -277,14 +277,14 @@ db.mountData = {
         { instanceID = 1651, diff = 23, index = 1, chance = 0.9 },
     }},
     [143643] = { journalMountID = 899, dropsBy = {
-        { instanceID = 1676, diff = 17, index = 1, chance = 0.2, lfr = {619, 0.4647, 0.6488, 627}}, { instanceID = 1676, diff = 14, index = 1, chance = 0.2 },
+        { instanceID = 1676, diff = 17, index = 1, chance = 0.2, lfr = {619, 0.4647, 0.6488, 627}, wing = 1494}, { instanceID = 1676, diff = 14, index = 1, chance = 0.2 },
         { instanceID = 1676, diff = 15, index = 1, chance = 0.2 }, { instanceID = 1676, diff = 16, index = 1, chance = 0.2 }
     }},
     [152789] = { journalMountID = 954, dropsBy = {
         { instanceID = 1712, diff = 16, index = 2, chance = 0.8 },
     }},
     [152816] = { journalMountID = 971, dropsBy = {
-        { instanceID = 1712, diff = 17, index = 1, chance = 1.0, lfr = {619, 0.4647, 0.6488, 627}}, { instanceID = 1712, diff = 14, index = 1, chance = 1.0 },
+        { instanceID = 1712, diff = 17, index = 1, chance = 1.0, lfr = {619, 0.4647, 0.6488, 627}, wing = 1610}, { instanceID = 1712, diff = 14, index = 1, chance = 1.0 },
         { instanceID = 1712, diff = 15, index = 1, chance = 1.0 }, { instanceID = 1712, diff = 16, index = 1, chance = 1.0 }
     }},
     [159842] = { journalMountID = 995, dropsBy = {
@@ -297,7 +297,7 @@ db.mountData = {
         { instanceID = 1841, diff = 23, index = 1, chance = 0.7 },
     }},
     [166518] = { journalMountID = 1217, dropsBy = {
-        { instanceID = 2070, diff = 17, index = 2, chance = 2.0, lfr = {{1161, 0.7418, 0.135}, {1164, 0.6859, 0.3042}}}, { instanceID = 2070, diff = 14, index = 1, chance = 2.0 },
+        { instanceID = 2070, diff = 17, index = 2, chance = 2.0, lfr = {{1161, 0.7418, 0.135}, {1164, 0.6859, 0.3042}}, wing = {1947, 1950}}, { instanceID = 2070, diff = 14, index = 1, chance = 2.0 },
         { instanceID = 2070, diff = 15, index = 1, chance = 2.0 }, { instanceID = 2070, diff = 16, index = 1, chance = 2.0 }
     }},
     [166705] = { journalMountID = 1219, dropsBy = {
@@ -317,7 +317,7 @@ db.mountData = {
         { instanceID = 2450, diff = 16, index = 2, chance = 0.4 },
     }},
     [186656] = { journalMountID = 1500, dropsBy = {
-        { instanceID = 2450, diff = 17, index = 1, chance = 0.3, lfr = {1670, 0.4163, 0.711}}, { instanceID = 2450, diff = 14, index = 1, chance = 0.3 },
+        { instanceID = 2450, diff = 17, index = 1, chance = 0.3, lfr = {1670, 0.4163, 0.711}, wing = 2221}, { instanceID = 2450, diff = 14, index = 1, chance = 0.3 },
         { instanceID = 2450, diff = 15, index = 1, chance = 0.3 }, { instanceID = 2450, diff = 16, index = 1, chance = 0.3 }
     }},
     [190768] = { journalMountID = 1587, dropsBy = {
