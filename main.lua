@@ -11,12 +11,13 @@ BountyHelperDB = {}
 
 bountyHelper.difficultyViewData = {}
 
+local ignoreList = {}
+local hideIgnored = false
 local hideOwned = false
 local hideKilled = false
 local hideButton = false
 local lockEsc = false
 local currentScale = 1.0
-local minimapButton = nil
 
 bountyHelper.frames = {}
 bountyHelper.contentFrames = {}
@@ -114,6 +115,7 @@ end
 
 local function createButton(parent, point, texture, color, onClick, size, tooltip)
     local f = CreateFrame("Button", nil, parent)
+    f.color = color
     f:SetSize(unpack(size or {32, 32}))
     f:SetPoint(unpack(point))
     f.texture = f:CreateTexture(nil, "OVERLAY")
@@ -130,10 +132,15 @@ local function createButton(parent, point, texture, color, onClick, size, toolti
         end
     end)
     f:SetScript("OnLeave", function()
-        f.texture:SetVertexColor(unpack(color))
+        f.texture:SetVertexColor(unpack(f.color))
         if tooltip then GameTooltip_Hide() end
     end)
     f:SetScript("OnClick", onClick)
+
+    function f:setColor(newColor)
+        f.color = newColor
+        f.texture:SetVertexColor(unpack(newColor))
+    end
 
     return f
 end
@@ -323,6 +330,19 @@ function bountyHelper:createUI()
         lockEsc = self:GetChecked()
     end)
     self.frames.LockCheckbox = lockCheckbox
+
+    local hideIgnoredCheckbox = CreateFrame("CheckButton", "bountyHelperHideIgnoredCheckbox", settingsPanel, "UICheckButtonTemplate")
+    hideIgnoredCheckbox:SetPropagateMouseMotion(true)
+    hideIgnoredCheckbox:SetPoint("LEFT", lockCheckbox, 184, 0)
+    hideIgnoredCheckbox.text = hideIgnoredCheckbox:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    hideIgnoredCheckbox.text:SetFont(STANDARD_TEXT_FONT, 14)
+    hideIgnoredCheckbox.text:SetPoint("LEFT", hideIgnoredCheckbox, "RIGHT", 0, 1)
+    hideIgnoredCheckbox.text:SetText("Hide Ignored")
+    hideIgnoredCheckbox:SetScript("OnClick", function(self)
+        hideIgnored = self:GetChecked()
+        bountyHelper:UpdateVisibleFrame()
+    end)
+    self.frames.HideIgnoredCheckbox = hideIgnoredCheckbox
 end
 
 function bountyHelper:CreateCategoryHeader(parent, difficultyID)
@@ -613,20 +633,32 @@ function bountyHelper:createContent()
     for mountID, data in pairs(db.mountData) do
         local headerRow = self:createHeaderRow(mountID, data.journalMountID, db.mountData[mountID].name, data.dropsBy[1].chance)
         
+        local children = {
+            [headerRow.ignore] = 1,
+            [headerRow.arrow] = 1
+        }
         local instanceID = data.dropsBy[1].instanceID
         local mountLink = select(2, GetItemInfo(mountID))
 
-        headerRow:SetScript("OnEnter", function(self)
-            self.border:Show()
+        headerRow.border:SetScript("OnEnter", function(self)
+            self:SetAlpha(1)
+            headerRow.arrow:Show()
             GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
             GameTooltip:SetText(colors.green .. "<Left Click to add Map Pin>")
             GameTooltip:Show()
         end)
-        headerRow:SetScript("OnLeave", function(self)
-            self.border:Hide()
+        headerRow.border:SetScript("OnLeave", function(self)
+            if not children[GetMouseFoci()[1]] then
+                self:SetAlpha(0)
+                headerRow.arrow:Hide()
+            end
             GameTooltip_Hide()
         end)
-        headerRow:SetScript("OnClick", function()
+        headerRow.arrow:HookScript("OnLeave", function(self)
+            headerRow.border:SetAlpha(0)
+            self:Hide()
+        end)
+        headerRow.border:SetScript("OnMouseDown", function()
             if IsControlKeyDown() then
                 if not InCombatLockdown() then DressUpMount(data.journalMountID) end
             elseif db.waypoints[instanceID] then
@@ -652,22 +684,25 @@ function bountyHelper:createContent()
 end
 
 function bountyHelper:createHeaderRow(mountID, journalMountID, name, chance)
-    local row = CreateFrame("Button", nil, self.frames.scrollContent)
-    row:SetSize(606, 40)
+    local row = CreateFrame("Frame", nil, self.frames.scrollContent)
+    row:SetSize(606, 56)
     row:SetClipsChildren(true)
     row.isHeader = true
     row.sourceRows = {}
     row.mountID = mountID
     
-    createRect(row, {602, 36}, {"CENTER"}, colors.blackRGB):SetFrameLevel(2)
-    local border = createRect(row, {606, 40}, {"CENTER"}, colors.goldRGB)
-    border:SetFrameLevel(1)
-    border:Hide()
+    local color = ignoreList[mountID] and colors.redRGB or colors.goldRGB
+
+    local panel = createRect(row, {602, 36}, {"TOP", 0, -2}, colors.blackRGB)
+    panel:SetFrameLevel(3)
+    local border = createRect(row, {606, 40}, {"TOP"}, color)
+    border:SetFrameLevel(2)
+    border:SetAlpha(0)
     row.border = border
 
-    local icon = CreateFrame("Button", nil, row)
+    local icon = CreateFrame("Button", nil, panel)
     icon:SetSize(36, 36)
-    icon:SetPoint("LEFT", 2, 0)
+    icon:SetPoint("TOPLEFT")
     icon:SetNormalTexture(GetItemIcon(mountID))
     icon:GetNormalTexture():SetTexCoord(0.0625, 0.9375, 0.0625, 0.9375)
     icon:SetScript("OnEnter", function(self)
@@ -681,11 +716,34 @@ function bountyHelper:createHeaderRow(mountID, journalMountID, name, chance)
             DressUpMount(journalMountID)
         end
     end)
-    createText(row, "GameFontNormalLarge", {"LEFT", 50, 0}):SetText(name)
-    local chanceText = createText(row, "GameFontNormal", {"RIGHT", -12, 0}, nil, {STANDARD_TEXT_FONT, 14})
+    createText(panel, "GameFontNormalLarge", {"TOPLEFT", 48, -10}):SetText(name)
+    local chanceText = createText(panel, "GameFontNormal", {"TOPRIGHT", -12, -10}, nil, {STANDARD_TEXT_FONT, 14})
     chanceText:SetJustifyH("RIGHT")
     chanceText:SetFormattedText("Chance: %s%s|r > %s%.1f%%|r", colors.grey, (chance == 0) and "Unknown" or string.format("%.1f%%", chance), colors.green, chance + 5)
     
+    local ignore = createButton(panel, {"TOPLEFT", 2, -38}, "ignore", colors.redRGB, function()
+        ignoreList[mountID] = not ignoreList[mountID]
+        local newColor = ignoreList[mountID] and colors.redRGB or colors.goldRGB
+        border:SetBackdropColor(unpack(newColor))
+        row.arrow:setColor(newColor)
+        self:updateContent()
+    end, nil, "Ignore")
+    ignore:Hide()
+    row.ignore = ignore
+
+    row.expanded = false
+    row.arrow = createButton(row, {"BOTTOM"}, "arrow", color, function()
+        row.expanded = not row.expanded
+        local height = row.expanded and 92 or 56
+
+        row:SetHeight(height)
+        panel:SetHeight(height - 20)
+        border:SetHeight(height - 16)
+        row.arrow.texture:SetTexCoord(unpack(row.expanded and {1, 0, 1, 0} or {0, 1, 0, 1}))
+        ignore:SetShown(row.expanded)
+    end)
+    row.arrow:Hide()
+
     return row
 end
 
@@ -814,7 +872,7 @@ function bountyHelper:updateContent()
                     sourceRow.statusText:SetText(killed and (colors.green .. "Killed") or (colors.red .. "Not Killed"))
                 end
 
-                local hide = (hideOwned and isOwned) or (hideKilled and killed and not isOwned)
+                local hide = (hideIgnored and ignoreList[frame.mountID]) or (hideOwned and isOwned) or (hideKilled and killed and not isOwned)
                 if not hide then sourceCount = sourceCount + 1 end
                 sourceRow:SetShown(not hide)
             end
@@ -828,7 +886,7 @@ function bountyHelper:updateContent()
         if frame:IsShown() then
             frame:ClearAllPoints()
             if not lastFrame then frame:SetPoint("TOP", self.frames.scrollContent, "BOTTOM")
-            else frame:SetPoint("TOP", lastFrame, "BOTTOM", 0, -4) end
+            else frame:SetPoint("TOP", lastFrame, "BOTTOM", 0, lastFrame.isHeader and 12 or -4) end
             lastFrame = frame
         end
     end
@@ -874,6 +932,7 @@ function bountyHelper:Toggle()
         bountyHelper:UpdateDiffLayout()
         bountyHelper:updateContent()
         
+        bountyHelper.frames.HideIgnoredCheckbox:SetChecked(hideIgnored)
         bountyHelper.frames.HideOwnedCheckbox:SetChecked(hideOwned)
         bountyHelper.frames.HideKilledCheckbox:SetChecked(hideKilled)
         bountyHelper.frames.HideButtonCheckbox:SetChecked(hideButton)
@@ -927,6 +986,8 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
         local name = ...
         if name == addonName then
             BountyHelperDB = BountyHelperDB or {}
+            ignoreList = BountyHelperDB.ignoreList or {}
+            hideIgnored = BountyHelperDB.hideIgnored or false
             hideOwned = BountyHelperDB.hideOwned or false
             hideKilled = BountyHelperDB.hideKilled or false
             hideButton = BountyHelperDB.hideButton or false
@@ -985,6 +1046,8 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
         self:UnregisterEvent("ADDON_LOADED")
 
     elseif event == "PLAYER_LOGOUT" then
+        BountyHelperDB.ignoreList = ignoreList
+        BountyHelperDB.hideIgnored = hideIgnored
         BountyHelperDB.hideOwned = hideOwned
         BountyHelperDB.hideKilled = hideKilled
         BountyHelperDB.hideButton = hideButton
