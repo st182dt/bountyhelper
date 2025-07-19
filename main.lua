@@ -4,6 +4,8 @@ local instanceOrderMap = {}
 for i, id in ipairs(db.instanceOrderList) do
     instanceOrderMap[id] = i
 end
+local serverTime
+local charName
 local faction
 
 bountyHelper = {}
@@ -164,6 +166,22 @@ local function createText(parent, template, point, size, font)
     function f:setColor(newColor) f:SetTextColor(unpack(newColor)) end
 
     return f
+end
+
+local function getOrCreatePath(t, ...)
+    for _, key in ipairs{...} do
+        t[key] = t[key] or {}
+        t = t[key]
+    end
+    return t
+end
+
+local function getPath(t, ...)
+    for _, key in ipairs{...} do
+        if t[key] == nil then return nil end
+        t = t[key]
+    end
+    return t
 end
 
 local settingsTimer
@@ -794,7 +812,25 @@ function bountyHelper:createSourceRow(source)
     diffText:SetHeight(30)
     --
     local statusText = createText(row, "GameFontNormal", {"RIGHT", -12, 0}, nil, {STANDARD_TEXT_FONT, 14})
+    statusText:SetHeight(30)
     statusText:SetJustifyH("RIGHT")
+    statusText:onEnter(function(self)
+        local tooltip = ""
+        for name, data in pairs(BountyHelperDB.altData) do
+            if name ~= charName then
+                local reset = getPath(data, source.instanceID, source.index, source.diff)
+                if reset and GetServerTime() - reset < 0 then
+                    tooltip = string.format("%s\n|c%s%s", tooltip, RAID_CLASS_COLORS[data["CLASS"]].colorStr, name)
+                end
+            end
+        end
+        if #tooltip > 0 then
+            GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+            GameTooltip:SetText(string.format("%sKilled on:%s", colors.green, tooltip))
+            GameTooltip:Show()
+        end
+    end)
+    statusText:onLeave(GameTooltip_Hide)
     row.statusText = statusText
 
     if source.lfr then
@@ -972,15 +1008,27 @@ function bountyHelper:UpdateVisibleFrame()
     end
 end
 
-function checkSaved()
+local function checkSaved()
+    local savedData = {}
     for i = 1, GetNumSavedInstances() do
-        local _, _, reset, difficultyID, _, _, _, _, _, _, numEncounters, _, _, instanceID = GetSavedInstanceInfo(i)
+        local reset, difficultyID, _, _, _, _, _, _, _, _, _, instanceID = select(3, GetSavedInstanceInfo(i))
         if reset ~= 0 then
             local bossList = db.bossData[instanceID]
             if bossList then
-                for _, boss in ipairs(bossList) do
+                for j, boss in ipairs(bossList) do
                     if boss.killedAtDiff[difficultyID] ~= nil then
                         if C_RaidLocks.IsEncounterComplete(instanceID, boss.encounterID, difficultyID) then
+                            getOrCreatePath(savedData, instanceID, j)[difficultyID] = serverTime + reset
+
+                            local connectedDifficulties = {3, 4, 5, 6}
+                            if tContains(connectedDifficulties, difficultyID) then
+                                for _, diff in ipairs(connectedDifficulties) do
+                                    if diff ~= difficultyID and boss.killedAtDiff[diff] ~= nil then
+                                        getOrCreatePath(savedData, instanceID, j)[diff] = serverTime + reset
+                                    end
+                                end
+                            end
+                            
                             boss.killedAtDiff[difficultyID] = true
                             if bountyHelper.difficultyViewData[difficultyID] and bountyHelper.difficultyViewData[difficultyID][instanceID] then
                                 for _, cachedBoss in ipairs(bountyHelper.difficultyViewData[difficultyID][instanceID]) do
@@ -995,6 +1043,10 @@ function checkSaved()
                 end
             end
         end
+    end
+    if next(savedData) then
+        savedData["CLASS"] = select(2, UnitClass("player"))
+        BountyHelperDB.altData[charName] = savedData
     end
 end
 
@@ -1018,6 +1070,7 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
             currentScale = BountyHelperDB.scale or 1.0
             --if not BountyHelperDB.position then = BountyHelperDB.position = {0, 0} end
             BountyHelperDB.point = BountyHelperDB.point or {"CENTER", 0, 0}
+            BountyHelperDB.altData = BountyHelperDB.altData or {}
 
             local LibDBIcon = LibStub("LibDBIcon-1.0")
             LibDBIcon:Register("BountyHelper", LDB, dbBH.minimap)
@@ -1025,6 +1078,8 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
         end
     
     elseif event == "FIRST_FRAME_RENDERED" then
+        serverTime = GetServerTime()
+        charName = string.format("%s-%s", GetUnitName("player"), GetRealmName())
         faction = (UnitFactionGroup("player") == "Alliance") and 1 or 2
 
         for i, wp in pairs(db.waypoints) do
@@ -1078,6 +1133,7 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
         BountyHelperDB.scale = currentScale
         local point, relativeTo, relativePoint, xOfs, yOfs = bountyHelper.frames.main:GetPoint()
         BountyHelperDB.point = { relativePoint, xOfs, yOfs }
+        checkSaved()
 
     elseif event == "ENCOUNTER_END" then
         local encounterID, _, difficultyID, _, success = ...
@@ -1102,6 +1158,8 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
                     bountyHelper:UpdateDiffLayout()
                     bountyHelper:updateContent()
                 end
+
+                RequestRaidInfo()
             end
         end
     end
