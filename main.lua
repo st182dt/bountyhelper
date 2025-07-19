@@ -68,27 +68,29 @@ local function sharedDifficulty(difficultyID, instanceID, encounterID)
 end
 
 local difficultyInfo = {
-    [1] = {name = "Normal Dungeons", expanded = false},
-    [2] = { name = "Heroic Dungeons", expanded = false},
-    [3] = {name = "Normal (10) Raids", expanded = false},
-    [4] = {name = "Normal (25) Raids", expanded = false},
-    [5] = {name = "Heroic (10) Raids", expanded = false},
-    [6] = {name = "Heroic (25) Raids", expanded = false},
-    [14] = {name = "Normal Raids", expanded = false},
-    [15] = {name = "Heroic Raids", expanded = false},
-    [16] = {name = "Mythic Raids", expanded = false},
-    [17] = {name = "LFR Raids", expanded = false},
-    [23] = {name = "Mythic Dungeons", expanded = false},
-    order = {17, 3, 4, 14, 5, 6, 15, 16, 1, 2, 23}
+    [1] = {name = "Normal Dungeon", expanded = false},
+    [2] = { name = "Heroic Dungeon", expanded = false},
+    [3] = {name = "Normal (10) Raid", expanded = false},
+    [4] = {name = "Normal (25) Raid", expanded = false},
+    [5] = {name = "Heroic (10) Raid", expanded = false},
+    [6] = {name = "Heroic (25) Raid", expanded = false},
+    [14] = {name = "Normal Raid", expanded = false},
+    [15] = {name = "Heroic Raid", expanded = false},
+    [16] = {name = "Mythic Raid", expanded = false},
+    [17] = {name = "LFR Raid", expanded = false},
+    [23] = {name = "Mythic Dungeon", expanded = false},
+    order = {17, 3, 4, 14, 5, 6, 15, 16, 1, 2, 23},
+    dungeons = {[1] = true, [2] = true, [23] = true}
 }
 
 local colors = {
-    gold = "|cffffd700", green = "|cff00ff00", red = "|cffff4040",
-    grey = "|cffb0b0b0", white = "|cffffffff", BLUE = "|cff70aeff",
-    blackRGB = {0.03137, 0.03137, 0.03137},
-    blackRGBA = {0.03137, 0.03137, 0.03137, 0.825},
-    goldRGB = {1, 0.7529411764705882, 0},
-    redRGB = {1, 0.2509803921568627, 0.2509803921568627}
+    blackRGB = {0.03137, 0.03137, 0.03137}, blackRGBA = {0.03137, 0.03137, 0.03137, 0.825},
+    blue = "|cff60b0ff",
+    gold = "|cffffd700", goldRGB = {1, 0.7529, 0},
+    green = "|cff00ff00",
+    grey = "|cffb0b0b0", greyRGB = {0.690196, 0.690196, 0.690196},
+    red = "|cffff4040", redRGB = {1, 0.25098, 0.25098},
+    white = "|cffffffff", whiteRGB = {1, 1, 1}
 }
 
 dbBH = {minimap = {hide = false}}
@@ -150,7 +152,17 @@ local function createText(parent, template, point, size, font)
     if size then f:SetSize(unpack(size)) end
     f:SetPoint(unpack(point))
     if font then f:SetFont(unpack(font)) end
-    
+
+    function f:onEnter(func) f:SetScript("OnEnter", func) end
+    function f:onLeave(func) f:SetScript("OnLeave", func) end
+    function f:onClick(func)
+        f:SetScript("OnMouseDown", function(_, button)
+            if button == "LeftButton" then func() end
+        end)
+    end
+
+    function f:setColor(newColor) f:SetTextColor(unpack(newColor)) end
+
     return f
 end
 
@@ -365,7 +377,7 @@ function bountyHelper:CreateCategoryHeader(parent, difficultyID)
 
     local title = header:CreateFontString(nil, "ARTWORK", "GameFontNormalHuge")
     title:SetPoint("LEFT", expander, "RIGHT", 8, 0)
-    title:SetText(colors.BLUE .. info.name)
+    title:SetText(colors.blue .. info.name)
     title:SetJustifyH("LEFT")
 
     header:SetScript("OnClick", function(self)
@@ -412,7 +424,7 @@ function bountyHelper:CreateBossRow(parent, bossData, header, instanceID)
     mapNameText:SetWordWrap(false)
     mapNameText:SetPoint("TOPLEFT", nameText, "RIGHT", 8, 0)
     mapNameText:SetFont(STANDARD_TEXT_FONT, 14)
-    mapNameText:SetText(colors.BLUE .. mapName)
+    mapNameText:SetText(colors.blue .. mapName)
     mapNameText:SetJustifyH("LEFT")
     mapNameText:EnableMouse(true)
     mapNameText:SetScript("OnEnter", function(self)
@@ -666,7 +678,7 @@ function bountyHelper:createContent()
                     local waypoint = UiMapPoint.CreateFromCoordinates(unpack(db.waypoints[instanceID].point))
                     C_Map.SetUserWaypoint(waypoint)
                     C_SuperTrack.SetSuperTrackedUserWaypoint(true)
-                    OpenWorldMap(db.waypoints[instanceID].point[4] or db.waypoints[instanceID].point[1])
+                    C_Map.OpenWorldMap(db.waypoints[instanceID].point[4] or db.waypoints[instanceID].point[1])
                     print(string.format("%sBounty Helper:|r Waypoint set for %s", colors.gold, mountLink))
                 end
             else
@@ -750,6 +762,7 @@ end
 function bountyHelper:createSourceRow(source)
     local row = CreateFrame("Frame", nil, self.frames.scrollContent)
     row:SetSize(606, 30)
+    row:SetClipsChildren(true)
     row.source = source
 
     local nameText = createText(row, "GameFontNormal", {"LEFT", 12, 0}, nil, {STANDARD_TEXT_FONT, 16})
@@ -765,7 +778,7 @@ function bountyHelper:createSourceRow(source)
     --
     local mapNameText = createText(row, "GameFontNormal", {"LEFT", nameText, "RIGHT", 6, 0}, nil, {STANDARD_TEXT_FONT, 14})
     mapNameText:SetWordWrap(false)
-    mapNameText:SetText(colors.BLUE .. instanceToMap[source.instanceID].name)
+    mapNameText:SetText(colors.blue .. instanceToMap[source.instanceID].name)
     mapNameText:SetSize(math.min(mapNameText:GetWidth(), 180), 30)
     mapNameText:SetScript("OnEnter", function(self)
         local waypoint = db.waypoints[source.instanceID]
@@ -776,7 +789,9 @@ function bountyHelper:createSourceRow(source)
     mapNameText:SetScript("OnLeave", GameTooltip_Hide)
     --
     local diffText = createText(row, "GameFontNormal", {"LEFT", mapNameText, "RIGHT", 6, 0}, nil, {STANDARD_TEXT_FONT, 14})
-    diffText:SetText(colors.grey .. difficultyInfo[source.diff].name)
+    diffText:setColor(colors.greyRGB)
+    diffText:SetText(difficultyInfo[source.diff].name)
+    diffText:SetHeight(30)
     --
     local statusText = createText(row, "GameFontNormal", {"RIGHT", -12, 0}, nil, {STANDARD_TEXT_FONT, 14})
     statusText:SetJustifyH("RIGHT")
@@ -793,12 +808,20 @@ function bountyHelper:createSourceRow(source)
             if not InCombatLockdown() then
                 C_Map.SetUserWaypoint(UiMapPoint.CreateFromCoordinates(unpack(source.lfr)))
                 C_SuperTrack.SetSuperTrackedUserWaypoint(true)
-                OpenWorldMap(source.lfr[4] or source.lfr[1])
+                C_Map.OpenWorldMap(source.lfr[4] or source.lfr[1])
                 print(string.format("%sBounty Helper:|r Waypoint set", colors.gold))
             end
         end, nil, colors.green .. "<Left Click to add Map Pin>|r\nWing: " .. GetLFGDungeonInfo(source.wing))
+    else
+        local underline = createRect(row, {diffText:GetWidth(), 2}, {"BOTTOM", diffText}, colors.goldRGB)
+        underline:Hide()
+        diffText:onEnter(function(self) self:setColor(colors.whiteRGB); underline:Show() end)
+        diffText:onLeave(function(self) self:setColor(colors.greyRGB); underline:Hide() end)
+        diffText:onClick(function()
+            ((difficultyInfo.dungeons[source.diff] and SetDungeonDifficultyID) or (IsLegacyDifficulty(source.diff) and SetLegacyRaidDifficultyID) or SetRaidDifficultyID)(source.diff)
+        end)
     end
-    
+
     return row
 end
 
@@ -1004,9 +1027,9 @@ eventHandlerFrame:SetScript("OnEvent", function(self, event, ...)
     elseif event == "FIRST_FRAME_RENDERED" then
         faction = (UnitFactionGroup("player") == "Alliance") and 1 or 2
 
-        for _, wp in pairs(db.waypoints) do
+        for i, wp in pairs(db.waypoints) do
             if type(wp.point[1]) == "table" then
-                wp.point = wp.point[faction]
+                wp.point = i == 2217 and wp.point[(#C_EncounterJournal.GetDungeonEntrancesForMap(1527) > 6) and 1 or 2] or wp.point[faction]
             end
             wp.name = C_Map.GetMapInfo(wp.point[1]).name
         end
